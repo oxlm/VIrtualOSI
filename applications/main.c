@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2020/12/10     greedyhao    The first version
+ * 2021/10/23     oxlm         adc + uart OK
  */
 
 /**
@@ -16,38 +16,26 @@
 
 #include <rtthread.h>
 #include "board.h"
-
-static void gpio_test(void)
-{
-    uint8_t pin = rt_pin_get("PE.1");
-
-    rt_pin_mode(pin, PIN_MODE_OUTPUT);
-    rt_kprintf("Hello, world\n");
-
-    while (1)
-    {
-        rt_pin_write(pin, PIN_LOW);
-        rt_thread_mdelay(500);
-        rt_pin_write(pin, PIN_HIGH);
-        rt_thread_mdelay(500);
-    }
-
-}
-
+#include "rtdevice.h"
+#include <string.h>
+#include <stdio.h>
 
 #define ADC_DEV_NAME        "adc0"      /* ADC 设备名称 */
 #define ADC_DEV_CHANNEL     0           /* ADC 通道 */
 #define REFER_VOLTAGE       330         /* 参考电压 3.3V,数据精度乘以100保留2位小数*/
 #define CONVERT_BITS        (1 << 10)   /* 转换位数为10位 */
 
-rt_adc_device_t adc_dev;                /* ADC 设备句柄 */
+static rt_adc_device_t adc_dev = RT_NULL;                /* ADC 设备句柄 */
 
-static void adc_test(void)
+
+#define SAMPLE_UART_NAME       "uart1"    /* 串口设备名称 */
+#define UART_BUF_SIZE          (128)
+
+static rt_device_t serial;                /* 串口设备句柄 */
+static struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;  /* 初始化配置参数 */
+
+static void adc_init(void)
 {
-    rt_uint32_t value, vol;
-    rt_dev_t adc_dev = RT_NULL;
-
-    /* 查找设备 */
     adc_dev = (rt_adc_device_t)rt_device_find(ADC_DEV_NAME);
     if(adc_dev == RT_NULL)
     {
@@ -55,13 +43,35 @@ static void adc_test(void)
         return;
     }
 
-    /* 使能设备 */
     if(rt_adc_enable(adc_dev, ADC_DEV_CHANNEL) != RT_EOK)
     {
         rt_kprintf("ADC channel %d didn't exist\n", ADC_DEV_CHANNEL);
         return;
     }
+}
 
+void uart_init(void)
+{
+    serial = rt_device_find(SAMPLE_UART_NAME);
+
+    config.baud_rate = BAUD_RATE_115200;
+    config.data_bits = DATA_BITS_8;
+    config.stop_bits = STOP_BITS_1;
+    config.bufsz     = UART_BUF_SIZE;
+    config.parity    = PARITY_NONE;
+
+    rt_device_control(serial, RT_DEVICE_CTRL_CONFIG, &config);
+
+    rt_device_open(serial, RT_DEVICE_FLAG_INT_RX);
+}
+
+int main(void)
+{
+    rt_uint32_t value, vol;
+    char str[UART_BUF_SIZE];
+
+    adc_init();
+    uart_init();
     while(1)
     {
         /* 读取采样值 */
@@ -69,13 +79,10 @@ static void adc_test(void)
 
         /* 转换为对应电压值 */
         vol = value * REFER_VOLTAGE / CONVERT_BITS;
-        rt_kprintf("the voltage is :%d.%02d \n", vol / 100, vol % 100);
-
-        rt_thread_mdelay(500);
+        //rt_kprintf("the voltage is :%d.%02d \n", vol / 100, vol % 100);
+        memset(str, 0x00, UART_BUF_SIZE);
+        snprintf(str, UART_BUF_SIZE, "$%d;", value);
+        rt_device_write(serial, 0, str, (sizeof(str) - 1));
+        rt_thread_mdelay(5);
     }
-}
-int main(void)
-{
-    //gpio_test();
-    adc_test();
 }

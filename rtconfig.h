@@ -171,10 +171,13 @@
 
 /* multimedia packages */
 
+/* LVGL: powerful and easy-to-use embedded GUI library */
 
-/* U8G2: a monochrome graphic library */
+/* end of LVGL: powerful and easy-to-use embedded GUI library */
 
-/* end of U8G2: a monochrome graphic library */
+/* u8g2: a monochrome graphic library */
+
+/* end of u8g2: a monochrome graphic library */
 /* end of multimedia packages */
 
 /* tools packages */
@@ -223,6 +226,8 @@
 #define BSP_USING_UART
 #define BSP_USING_UART0
 #define BSP_UART0_FIFO_SIZE 10
+#define BSP_USING_UART1
+#define BSP_UART1_FIFO_SIZE 128
 #define BSP_USING_ADC
 #define BSP_USING_ADC0
 /* end of On-chip Peripheral Drivers */
