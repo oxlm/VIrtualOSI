@@ -22,7 +22,8 @@
 
 #define ADC_DEV_NAME        "adc0"      /* ADC 设备名称 */
 #define ADC_DEV_CHANNEL     0           /* ADC 通道 */
-#define REFER_VOLTAGE       330         /* 参考电压 3.3V,数据精度乘以100保留2位小数*/
+//#define REFER_VOLTAGE       330         /* 参考电压 3.3V,数据精度乘以100保留2位小数*/
+#define REFER_VOLTAGE       33000         /* 参考电压 3.3V,数据精度乘以10000保留4位小数*/
 #define CONVERT_BITS        (1 << 10)   /* 转换位数为10位 */
 
 static rt_adc_device_t adc_dev = RT_NULL;                /* ADC 设备句柄 */
@@ -79,10 +80,10 @@ int main(void)
 
         /* 转换为对应电压值 */
         vol = value * REFER_VOLTAGE / CONVERT_BITS;
-        //rt_kprintf("the voltage is :%d.%02d \n", vol / 100, vol % 100);
+        //rt_kprintf("the voltage is :%d.%04d \n", vol / 10000, vol % 10000);
         memset(str, 0x00, UART_BUF_SIZE);
-        snprintf(str, UART_BUF_SIZE, "$%d;", value);
-        rt_device_write(serial, 0, str, (sizeof(str) - 1));
-        rt_thread_mdelay(5);
+        snprintf(str, UART_BUF_SIZE, "$%d;", vol);
+        rt_device_write(serial, 0, str, strlen(str) + 1);
+        //rt_thread_mdelay(1);
     }
 }
